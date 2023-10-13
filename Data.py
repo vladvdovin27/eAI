@@ -1,6 +1,7 @@
 import cv2 as cv
 import pandas as pd
 import config as cf
+import numpy as np
 from Backend import Backend
 
 
@@ -22,6 +23,8 @@ def read_data(filename, start_index=None, end_index=None):
         info = (df.loc[i]['height'], df.loc[i]['width'], df.loc[i]['length'])
 
         result = get_frames(video_name + '.mp4', df.loc[i]['begin'], df.loc[i]['end'])
+
+    return result
 
 
 def get_frames(path2file, begin_frame, end_frame):
@@ -45,7 +48,7 @@ def get_frames(path2file, begin_frame, end_frame):
         fl, frame = video.read()
 
         if begin_frame <= frame_number <= end_frame:
-            frames_list.append(cv.resize(cf.FRAME_SIZE, frame) / 255)
+            frames_list.append(np.asarray(cv.resize(cf.FRAME_SIZE, frame) / 255))
 
     return process_element(frames_list)
 
@@ -63,14 +66,22 @@ def process_element(element, result_size=(35, *cf.FRAME_SIZE, 3), variant='4d'):
     """
     if len(element) < result_size[0]:
         # Увеличение кол-ва фреймов
-        left_index, right_index = 0, len(element) - 1
+        # left_index, right_index = 0, len(element) - 1
         check = True
 
         while len(element) != result_size[0]:
             if check:
-                pass
+                arg = [element[i] for i in range(5)]
+                new_frame = Backend.frame_express(*arg)
+
+                element.insert(0, new_frame)
+                check = False
             else:
-                pass
+                arg = [element[-i] for i in range(5)]
+                new_frame = Backend.frame_express(*arg)
+
+                element.append(new_frame)
+                check = True
 
     elif len(element) > result_size[0]:
         # Уменьшение кол-ва фреймов
